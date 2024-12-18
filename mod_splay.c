@@ -11,6 +11,8 @@ typedef struct Node {
     //frequency=0;
 } Node;
 
+int totalcost=0;
+
 typedef struct SplayTree {
     Node* root;
     unsigned long size;
@@ -51,7 +53,28 @@ for(i=1;i<=height;i++){
 }
 }
 
-// Function to create a new node
+
+void preorderTraversal(Node* node) {
+    if (node == NULL)
+        return;
+
+    // Visit the current node
+    printf("%d ", node->key);
+
+    // Traverse the left subtree
+    preorderTraversal(node->left);
+
+    // Traverse the right subtree
+    preorderTraversal(node->right);
+}
+
+void printPreorder(SplayTree* tree) {
+    printf("Preorder Traversal:\n");
+    preorderTraversal(tree->root);
+    printf("\n");
+}
+
+
 Node* create_node(int key) {
     Node* new_node = (Node*)malloc(sizeof(Node));
     if (!new_node) {
@@ -64,7 +87,7 @@ Node* create_node(int key) {
     return new_node;
 }
 
-// Function to initialize the splay tree
+
 SplayTree* create_tree() {
     SplayTree* tree = (SplayTree*)malloc(sizeof(SplayTree));
     if (!tree) {
@@ -77,42 +100,125 @@ SplayTree* create_tree() {
 }
 
 
-// Left rotate
+
 void left_rotate(SplayTree* tree, Node* x) {
+    if (!x || !x->right) {
+        printf("left rotate failed because node is null.");
+       return; // Ensure x and x->right are not NULL 
+    }
+    
+
     Node* y = x->right;
-    if (y) {
-        x->right = y->left;
-        if (y->left) y->left->parent = x;
-        y->parent = x->parent;
+
+    
+    x->right = y->left; // taşıma işlemi ynin soluna gecicek ya orayı bosaltiyoruz.
+    
+    if (y->left) y->left->parent = x;
+
+    y->parent = x->parent;
+
+    if (!x->parent) {
+        tree->root = y; // Update root if x was the root
+    } else if (x == x->parent->left) {
+        //x in parentının yeni sol cocugu y.
+        x->parent->left = y;
+    } else {
+        //x in parentının yeni sag cocugu y.
+        x->parent->right = y;
     }
-    if (!x->parent) tree->root = y;
-    else if (x == x->parent->left) x->parent->left = y;
-    else x->parent->right = y;
-    if (y) y->left = x;
+
+    y->left = x;
     x->parent = y;
 }
 
-// Right rotate
 void right_rotate(SplayTree* tree, Node* x) {
+    if (!x || !x->left) return; // Ensure x and x->left are not NULL
+
     Node* y = x->left;
-    if (y) {
-        x->left = y->right;
-        if (y->right) y->right->parent = x;
-        y->parent = x->parent;
+    x->left = y->right;
+    if (y->right) y->right->parent = x;
+
+    y->parent = x->parent;
+    if (!x->parent) {
+        tree->root = y; // Update root if x was the root
+    } else if (x == x->parent->left) {
+        x->parent->left = y;
+    } else {
+        x->parent->right = y;
     }
-    if (!x->parent) tree->root = y;
-    else if (x == x->parent->left) x->parent->left = y;
-    else x->parent->right = y;
-    if (y) y->right = x;
+
+    y->right = x;
     x->parent = y;
 }
 
-// Splay operation
+
+
+
+//if p(x) the parent of the root, is the tree root, rotate the edge x with p(x).
+void zig(SplayTree* tree, Node* x){
+
+if(x == x->parent->left){
+    // if x is the right child, we do left rotation.
+    left_rotate(tree ,x->parent); 
+}
+
+else{
+    //if x is the left child, we do right rotation.
+    right_rotate(tree,x->parent);
+}
+
+// initialize costs here.
+totalcost++;
+
+}
+
+//if p(x) is not root and x is a left child and p(x) a right child, or vice versa.
+void zig_zag(SplayTree* tree, Node* x){
+
+    if(x == x->parent->right && x->parent == x->parent->parent->left){
+        left_rotate(tree,x->parent);
+        right_rotate(tree,x->parent);
+        
+    }
+
+    else if(x== x->parent->left && x->parent == x->parent->parent->right){
+
+        right_rotate(tree,x->parent);
+        left_rotate(tree,x->parent);
+        
+    }
+        
+    totalcost += 2; //Zig-Zag rotation cost
+
+}
+
+//if p(x) is not the root and x and p(x) are both left or right children
+void zig_zig(SplayTree* tree, Node* x){
+
+if(x == x->parent->left && x->parent == x->parent->parent->left ){
+    right_rotate(tree,x->parent->parent);
+    right_rotate(tree, x->parent);
+}
+
+else if(x == x->parent->right && x->parent == x->parent->parent->right ){
+    left_rotate(tree,x->parent->parent);
+    left_rotate(tree, x->parent);
+}
+
+ totalcost += 2;
+}
+
+
+
 void splay(SplayTree* tree, Node* x) {
+
     while (x->parent) {
+
         if (!x->parent->parent) {
+
             if (x->parent->left == x) right_rotate(tree, x->parent);
             else left_rotate(tree, x->parent);
+
         } else if (x->parent->left == x && x->parent->parent->left == x->parent) {
             right_rotate(tree, x->parent->parent);
             right_rotate(tree, x->parent);
@@ -245,21 +351,41 @@ void destroy_tree(SplayTree* tree) {
     free(tree);
 }
 
+
+
 int main(){
      //SplayTree* tree = create_tree();
      SplayTree* tree2= create_tree();
 
-    insert(tree2,48);
-    insert(tree2,16);
-    insert(tree2,24);
+    insert(tree2, 58);
+    insert(tree2, 24);
+    insert(tree2, 26);
+    
+    /*insert(tree2, 13);
+    insert(tree2, 78);
+    insert(tree2, 45);
+    insert(tree2, 12);
+    insert(tree2, 68);
+    insert(tree2, 72);*/
+    
+
     printTree(tree2);
-    printf("\n must have been an imbalance in this situtation now we will do double rotation \n");
-    left_rotate(tree2,tree2->root);
-    printf("left");
-    right_rotate(tree2,tree2->root);
-    printf("Right");
-    printf("\nsolved?      \n");
+
+    printf("Printing preorder \n");
+    printPreorder(tree2);
+
+    left_rotate(tree2,find(tree2,24));
     printTree(tree2);
+
+    right_rotate(tree2,find(tree2,58));
+    printTree(tree2);
+
+
+
+    printf("\n check if it is solved?      \n");
+    printTree(tree2);
+    printf("Printing preorder \n");
+    printPreorder(tree2);
 
      
     
